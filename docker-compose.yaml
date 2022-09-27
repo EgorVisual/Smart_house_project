@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  smart_house_backend:
+    build:
+      context: ./image
+      dockerfile: Dockerfile
+    depends_on:
+      - mqtt
+    volumes:
+      - ./smart-house-backend-data:/image/smart-house-backend-data
+    ports:
+      - 8081:8080
+    env_file:
+      - .env
+    devices:
+      - ${SERIAL_PORT:?No serial port provided}
+    restart: always
+
+  mqtt:
+    build:
+      context: ./mqtt
+      dockerfile: Dockerfile
+    volumes:
+      - ./mosquitto-data/smart-house-backend-data:/mosquitto/smart-house-backend-data
+      - ./mosquitto-data/log:/mosquitto/log
+    ports:
+      - 1883:1883
+      - 9001:9001
+    restart: always
+
+  zigbee2mqtt:
+    build:
+      context: ./zigbee2mqtt
+      dockerfile: Dockerfile
+    depends_on:
+      - mqtt
+    volumes:
+      - ./zigbee2mqtt-data:/app/smart-house-backend-data
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8082:8080
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Moscow
+    devices:
+      - ${ZIGBEE_STICK:?No zigbee stick provided}
+    restart: always
